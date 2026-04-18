@@ -45,6 +45,7 @@ const KEYWORDS = new Set([
   "CALL","SIGNAL","RESIGNAL","HANDLER","CONDITION","SQLSTATE",
   // MSSQL
   "GO","NOLOCK","IDENTITY","OUTPUT","INSERTED","DELETED","SCOPE_IDENTITY",
+  "JSON","PATH","WITHOUT_ARRAY_WRAPPER","INCLUDE_NULL_VALUES",
   // Misc
   "TEMPORARY","TEMP","EXPLAIN","ANALYZE","VERBOSE","COSTS",
   "VACUUM","REINDEX","CLUSTER",
@@ -103,6 +104,7 @@ const MULTI_WORD_KEYWORDS = [
   // MSSQL
   "BEGIN TRY","END TRY","BEGIN CATCH","END CATCH",
   "WITH NOLOCK","OPTION RECOMPILE",
+  "FOR JSON PATH","FOR JSON AUTO","FOR JSON RAW","FOR XML PATH","FOR XML RAW","FOR XML AUTO",
   // Procedural
   "END IF","END LOOP","END WHILE","END FOR",
   "ELSE IF","ELSEIF",
@@ -395,6 +397,7 @@ function rebuild(tokens, rules) {
   let inProceduralBlock = false;
   let lastClauseKeyword = "";
   const ctx = createContextStack();
+  const caseDepthStack = []; // Track CASE nesting separately from baseIndent
 
   function indent(level) { return indentUnit.repeat(level); }
   function flush() { if (cur.trim()) lines.push(cur); cur = ""; }
@@ -499,6 +502,7 @@ function rebuild(tokens, rules) {
       // CASE/WHEN/THEN/ELSE/END
       if (upper === "CASE") {
         append(tok.value);
+        caseDepthStack.push(baseIndent);
         baseIndent++;
         continue;
       }
@@ -519,10 +523,17 @@ function rebuild(tokens, rules) {
       if (upper === "END" || upper === "END IF" || upper === "END LOOP" ||
           upper === "END WHILE" || upper === "END FOR" ||
           upper === "END TRY" || upper === "END CATCH") {
-        baseIndent = Math.max(0, baseIndent - 1);
+        // For CASE..END, restore the saved indent level instead of blindly decrementing
+        if (caseDepthStack.length > 0 && upper === "END") {
+          // Check if this END closes a CASE (not a BEGIN block)
+          // If we're not in a procedural block, or the caseDepthStack has entries, it's a CASE END
+          baseIndent = caseDepthStack.pop();
+        } else {
+          baseIndent = Math.max(0, baseIndent - 1);
+        }
         newLine(baseIndent);
         append(tok.value);
-        inProceduralBlock = false;
+        if (upper !== "END") inProceduralBlock = false;
         continue;
       }
 
@@ -584,28 +595,57 @@ function rebuild(tokens, rules) {
       }
 
       // Check newline-before-keywords (or always-newline major clause keywords)
-      const ALWAYS_NEWLINE = new Set(["HAVING","SELECT","FROM","WHERE",
+      const ALWAYS_NEWLINE = new Set(["HAVING","SELECT","FROM","WHERE","WITH",
         "JOIN","LEFT JOIN","RIGHT JOIN","INNER JOIN","CROSS JOIN",
         "FULL OUTER JOIN","LEFT OUTER JOIN","RIGHT OUTER JOIN","NATURAL JOIN",
         "CROSS APPLY","OUTER APPLY",
         "GROUP BY","ORDER BY","LIMIT","OFFSET",
         "UNION","UNION ALL","INTERSECT","EXCEPT",
         "SET","VALUES","INSERT INTO","UPDATE","DELETE",
-        "ON CONFLICT","RETURNING"]);
+        "ON CONFLICT","RETURNING",
+        "FOR JSON PATH","FOR JSON AUTO","FOR JSON RAW","FOR XML PATH","FOR XML RAW","FOR XML AUTO"]);
       const alwaysNewline = ALWAYS_NEWLINE.has(upper);
       if (newlineKws.has(upper) || alwaysNewline) {
-        blankLine();
-
-        // Track JOIN ON clause — ON starts it ONLY after a JOIN keyword
+        // Smart blank line: only between major clause GROUP transitions, not same-type consecutive keywords
         const joinTypes = ["JOIN","LEFT JOIN","RIGHT JOIN","INNER JOIN",
           "FULL OUTER JOIN","CROSS JOIN","LEFT OUTER JOIN","RIGHT OUTER JOIN",
           "NATURAL JOIN","CROSS APPLY","OUTER APPLY"];
-        if (upper === "ON" && rules.joinConditionIndent) {
+        const forJsonXmlTypes = ["FOR JSON PATH","FOR JSON AUTO","FOR JSON RAW","FOR XML PATH","FOR XML RAW","FOR XML AUTO"];
+
+        // Determine clause "group" for blank-line logic
+        function clauseGroup(kw) {
+          if (joinTypes.includes(kw)) return "JOIN";
+          if (kw === "ON") return "ON";
+          if (forJsonXmlTypes.includes(kw)) return "FOR_JSON_XML";
+          return kw; // SELECT, FROM, WHERE, etc. are each their own group
+        }
+        const prevGroup = clauseGroup(lastClauseKeyword);
+        const curGroup = clauseGroup(upper);
+        // Only blank-line on clause group change, and never inside subqueries (baseIndent > 0),
+        // and never for FOR JSON/XML
+        const shouldBlankLine = prevGroup !== curGroup
+          && lastClauseKeyword !== ""
+          && curGroup !== "FOR_JSON_XML"
+          && curGroup !== "ON"
+          && ctx.depth() === 0;
+        if (shouldBlankLine) {
+          blankLine();
+        }
+
+        if (upper === "ON") {
           // Check if previous newline keyword was a JOIN
           const isAfterJoin = joinTypes.includes(lastClauseKeyword);
           if (isAfterJoin) {
             inJoinOnClause = true;
-            newLine(baseIndent + 1);
+            if (rules.joinConditionIndent) {
+              // ON on its own line, indented under JOIN
+              newLine(baseIndent + 1);
+            } else {
+              // ON stays on the same line as JOIN
+              append(tok.value);
+              lastClauseKeyword = upper;
+              continue;
+            }
           } else {
             // Not a JOIN ON — just regular keyword (e.g. CREATE INDEX ON, SET NOCOUNT ON)
             append(tok.value);
@@ -669,6 +709,11 @@ function rebuild(tokens, rules) {
     if (tok.type === T.COMMA) {
       // GROUP BY / ORDER BY commas — keep items on same line
       if (inGroupOrderClause) {
+        appendNoSpace(",");
+        continue;
+      }
+      // If selectColumnsOnNewLine is false, keep columns on same line
+      if (inSelectClause && rules.selectColumnsOnNewLine === false) {
         appendNoSpace(",");
         continue;
       }
@@ -849,7 +894,22 @@ function splitStatements(sql) {
       }
     }
 
-    if (ch === ";") { current += ";"; statements.push(current.trim()); current = ""; continue; }
+    // Handle semicolon: don't split if ; is followed by WITH (MSSQL ;WITH CTE pattern)
+    if (ch === ";") {
+      // Look ahead past whitespace for WITH keyword
+      let lookAhead = i + 1;
+      while (lookAhead < sql.length && /\s/.test(sql[lookAhead])) lookAhead++;
+      const rest = sql.slice(lookAhead, lookAhead + 4).toUpperCase();
+      if (rest === "WITH") {
+        // ;WITH pattern — keep the semicolon but don't split
+        current += ";";
+        continue;
+      }
+      current += ";";
+      statements.push(current.trim());
+      current = "";
+      continue;
+    }
     current += ch;
   }
   if (current.trim()) statements.push(current.trim());
@@ -885,6 +945,13 @@ function formatSQLInner(rawSQL, rules) {
     let hasSemicolon = false;
     if (sql.endsWith(";")) { hasSemicolon = true; sql = sql.slice(0, -1).trim(); }
 
+    // Handle MSSQL ;WITH CTE pattern — strip leading ; before WITH
+    let hasLeadingSemicolon = false;
+    if (/^;\s*with\b/i.test(sql)) {
+      hasLeadingSemicolon = true;
+      sql = sql.replace(/^;\s*/, "");
+    }
+
     let tokens = tokenize(sql);
     tokens = mergeMultiWordKeywords(tokens);
     annotateparenContexts(tokens);
@@ -893,7 +960,14 @@ function formatSQLInner(rawSQL, rules) {
     if (hasSemicolon) tokens.push({ type: T.SEMI, value: ";" });
 
     const lines = rebuild(tokens, rules);
-    return postProcess(lines);
+    let result = postProcess(lines);
+
+    // Prepend ; back to WITH for ;WITH CTE pattern
+    if (hasLeadingSemicolon) {
+      result = ";" + result;
+    }
+
+    return result;
   });
 
   return formatted.join("\n\n");

@@ -118,9 +118,7 @@ export default function FormatterPanel() {
             </div>
             <div className="w-full h-full p-6 overflow-auto">
               {outputSQL ? (
-                <pre className="editor-textarea text-slate-900 dark:text-[#a5d6ff]">
-                  {outputSQL}
-                </pre>
+                <pre className="editor-textarea text-slate-900 dark:text-[#a5d6ff]">{outputSQL}</pre>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center space-y-3">

@@ -10,7 +10,8 @@ IMPORTANT RULES:
 - For "andOrIndented": If AND/OR lines are indented (have leading spaces), this MUST be true.
 - For "newlineBeforeKeywords": Check EVERY keyword that starts a new line. Include ON, HAVING, and any keyword that begins a line.
 - For "spaceInsideParens": Look at function calls like COUNT(x) — if there is NO space after ( or before ), set false.
-- For "joinConditionIndent": If ON appears indented after a JOIN line, set true.
+- For "joinConditionIndent": If ON appears on a SEPARATE line (indented) after a JOIN line, set true. If ON stays on the SAME line as JOIN (e.g. "join tbl a on a.id = b.id"), set false.
+- For "selectColumnsOnNewLine": If SELECT columns are each on their own line (one column per line), set true. If multiple columns appear on the same line separated by commas, set false.
 - For "joinAndOrOnNewline": If AND/OR appears on its own line INSIDE a JOIN ON condition (after ON, before WHERE/GROUP BY), set true.
 
 Return a JSON object with exactly these fields:
@@ -41,8 +42,9 @@ Return a JSON object with exactly these fields:
   "spaceInsideParens": <boolean>,
   "insertColumnsStyle": "inline" | "multiline",
   "valuesStyle": "inline" | "multiline",
-  "joinConditionIndent": <boolean>,
+  "joinConditionIndent": <boolean — TRUE if ON is on a separate indented line after JOIN, FALSE if ON is on same line as JOIN>,
   "joinConditionIndentSize": <number>,
+  "selectColumnsOnNewLine": <boolean — TRUE if each SELECT column is on its own line, FALSE if multiple columns on same line>,
   "trailingComma": <boolean>,
   "selectDistinctStyle": "same_line",
   "starExpansion": "inline"
@@ -181,16 +183,43 @@ function postProcessRules(rules, sampleSQL) {
     }
   }
 
-  // Check if ON appears indented (after JOIN)
+  // Check if ON appears indented on its own line (after JOIN)
   const onAtLineStart = lines.some(l => /^\s+ON\b/i.test(l));
   if (onAtLineStart) {
     rules.joinConditionIndent = true;
+  }
+  // Check if ON stays on the same line as JOIN
+  const onSameLineAsJoin = lines.some(l => /\bjoin\b.*\bon\b/i.test(l));
+  if (onSameLineAsJoin && !onAtLineStart) {
+    rules.joinConditionIndent = false;
   }
 
   // Check function call parens — look for patterns like COUNT(, SUM( without space
   const funcNoSpace = /\b\w+\([^\s)]/i.test(sampleSQL);
   if (funcNoSpace) {
     rules.spaceInsideParens = false;
+  }
+
+  // Check if SELECT columns are on the same line (multiple commas on one line after SELECT)
+  const selectIdx = lines.findIndex(l => /^\s*SELECT\b/i.test(l.trim()));
+  if (selectIdx !== -1) {
+    // Check the SELECT line and the lines after it (before FROM)
+    let multiColOnLine = false;
+    for (let li = selectIdx; li < lines.length; li++) {
+      const line = lines[li].trim().toUpperCase();
+      if (li > selectIdx && /^(FROM|WHERE|JOIN|LEFT|RIGHT|INNER|FULL|CROSS|GROUP|ORDER|HAVING|LIMIT|UNION|SET|VALUES|UPDATE|DELETE)\b/.test(line)) break;
+      // Count commas on this line (excluding commas inside parentheses)
+      let depth = 0, commaCount = 0;
+      for (const ch of lines[li]) {
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (ch === ',' && depth === 0) commaCount++;
+      }
+      if (commaCount >= 2) { multiColOnLine = true; break; }
+    }
+    if (multiColOnLine) {
+      rules.selectColumnsOnNewLine = false;
+    }
   }
 
   return rules;

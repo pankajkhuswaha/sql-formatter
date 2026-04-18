@@ -386,6 +386,10 @@ function createContextStack() {
 function rebuild(tokens, rules) {
   const indentUnit = rules.indentChar === "\t" ? "\t" : " ".repeat(rules.indentSize || 4);
   const newlineKws = new Set((rules.newlineBeforeKeywords || []).map(k => k.toUpperCase()));
+  // Spacing helpers derived from rules
+  const commaGap = " ".repeat(Math.max(1, rules.spaceAfterComma ?? 1));
+  const spaceOps = rules.spaceAroundOperators !== false;
+  const spaceFuncParen = rules.spaceAfterFunctionName === true;
 
   const lines = [];
   let cur = "";
@@ -396,6 +400,8 @@ function rebuild(tokens, rules) {
   let inBetween = false;
   let inProceduralBlock = false;
   let lastClauseKeyword = "";
+  let selectColCount = 0;           // columns emitted in current SELECT row
+  const columnsPerRow = Math.max(1, rules.columnsPerRow || 1);
   const ctx = createContextStack();
   const caseDepthStack = []; // Track CASE nesting separately from baseIndent
 
@@ -444,7 +450,7 @@ function rebuild(tokens, rules) {
       }
       if (tok.type === T.COMMA) {
         cur = cur.trimEnd();
-        appendNoSpace(", ");
+        appendNoSpace("," + commaGap);
         continue;
       }
       if (tok.type === T.LPAREN) {
@@ -474,9 +480,15 @@ function rebuild(tokens, rules) {
         appendNoSpace(tok.value);
         continue;
       }
-      // Token right after ", " — already has trailing space, no extra
+      // Token right after comma separator — already has trailing space, no extra
       if (i > 0 && tokens[i-1].type === T.COMMA) {
         appendNoSpace(tok.value);
+        continue;
+      }
+      // Operator tokens inside inline — respect spaceAroundOperators
+      if (tok.type === T.OP) {
+        if (spaceOps) append(tok.value);
+        else appendNoSpace(tok.value);
         continue;
       }
       // Everything else inside inline — append with space
@@ -669,6 +681,7 @@ function rebuild(tokens, rules) {
         if (upper === "SELECT") {
           inSelectClause = true;
           inGroupOrderClause = false;
+          selectColCount = 0;
           if (rules.columnIndent) {
             flush();
             cur = " ".repeat(rules.columnIndentSize || rules.indentSize || 4);
@@ -712,9 +725,16 @@ function rebuild(tokens, rules) {
         appendNoSpace(",");
         continue;
       }
-      // If selectColumnsOnNewLine is false, keep columns on same line
+      // SELECT with columnsPerRow > 1: break only after N columns
       if (inSelectClause && rules.selectColumnsOnNewLine === false) {
-        appendNoSpace(",");
+        selectColCount++;
+        if (columnsPerRow > 1 && selectColCount % columnsPerRow !== 0) {
+          // stay on same line
+          appendNoSpace("," + commaGap);
+        } else {
+          appendNoSpace(",");
+          newLine(baseIndent + 1);
+        }
         continue;
       }
       if (inSelectClause && rules.columnIndent) {
@@ -748,10 +768,11 @@ function rebuild(tokens, rules) {
         continue;
       }
 
-      // Function call — attach ( directly to function name, always tight
+      // Function call — attach ( directly (or with space if spaceAfterFunctionName)
       if (pCtx === PC.FUNCTION) {
         ctx.push({ type: PC.FUNCTION, inSelect: inSelectClause });
-        appendNoSpace("(");
+        if (spaceFuncParen) append("(");
+        else appendNoSpace("(");
         continue;
       }
 
@@ -810,6 +831,16 @@ function rebuild(tokens, rules) {
       continue;
     }
 
+    // ── OP tokens (not inline) — respect spaceAroundOperators ──
+    if (tok.type === T.OP) {
+      if (spaceOps) append(tok.value);
+      else {
+        cur = cur.trimEnd();
+        appendNoSpace(tok.value);
+      }
+      continue;
+    }
+
     // ── Everything else ──
     append(tok.value);
   }
@@ -819,8 +850,15 @@ function rebuild(tokens, rules) {
 }
 
 // ─── Post-process ──────────────────────────────────────────────────────
-function postProcess(lines) {
+function postProcess(lines, rules = {}) {
   let result = lines.map(l => l.trimEnd());
+
+  // ── Align column aliases in SELECT blocks ──
+  if (rules.alignColumnAliases) {
+    result = alignAliases(result);
+  }
+
+  // ── Collapse consecutive blank lines ──
   const collapsed = [];
   let prevBlank = false;
   for (const line of result) {
@@ -835,6 +873,61 @@ function postProcess(lines) {
   while (collapsed.length > 0 && collapsed[0] === "") collapsed.shift();
   while (collapsed.length > 0 && collapsed[collapsed.length - 1] === "") collapsed.pop();
   return collapsed.join("\n");
+}
+
+/**
+ * Pad column expressions in SELECT blocks so that AS aliases align.
+ * Looks for contiguous lines of the SELECT block (indented, comma-separated lines)
+ * and finds the max expr length to align AS keywords.
+ */
+function alignAliases(lines) {
+  const result = [...lines];
+  let i = 0;
+  while (i < result.length) {
+    // Find a SELECT line
+    if (/^\s*SELECT\b/i.test(result[i])) {
+      // Collect the block: next lines until a clause keyword at column 0
+      const blockStart = i + 1;
+      let blockEnd = blockStart;
+      while (
+        blockEnd < result.length &&
+        !/^(?:FROM|WHERE|JOIN|LEFT|RIGHT|INNER|FULL|CROSS|GROUP|ORDER|HAVING|LIMIT|UNION|SET|VALUES|UPDATE|DELETE)\b/i.test(
+          result[blockEnd].trimStart()
+        )
+      ) {
+        blockEnd++;
+      }
+      // Align AS within the block
+      const blockLines = result.slice(blockStart, blockEnd);
+      const aligned = alignAsInBlock(blockLines);
+      for (let j = 0; j < aligned.length; j++) {
+        result[blockStart + j] = aligned[j];
+      }
+      i = blockEnd;
+      continue;
+    }
+    i++;
+  }
+  return result;
+}
+
+function alignAsInBlock(lines) {
+  // Only align lines that contain " AS " or end with an alias (no AS)
+  // Strategy: find the leading indent + expression part before AS, compute max width
+  const parsed = lines.map(line => {
+    const m = line.match(/^(\s*)(.*?)\s+(AS|as)\s+(\S.*)$/);
+    if (m) return { indent: m[1], expr: m[2].trimEnd(), kw: m[3], alias: m[4], raw: line };
+    return { indent: "", expr: "", kw: "", alias: "", raw: line };
+  });
+  const withAs = parsed.filter(p => p.kw);
+  if (withAs.length < 2) return lines; // nothing to align
+  const maxExpr = Math.max(...withAs.map(p => p.indent.length + p.expr.length));
+  return parsed.map(p => {
+    if (!p.kw) return p.raw;
+    const total = p.indent.length + p.expr.length;
+    const pad = " ".repeat(Math.max(1, maxExpr - total + 1));
+    return `${p.indent}${p.expr}${pad}${p.kw} ${p.alias}`;
+  });
 }
 
 // ─── Split Multi-Statement SQL ─────────────────────────────────────────
@@ -960,7 +1053,7 @@ function formatSQLInner(rawSQL, rules) {
     if (hasSemicolon) tokens.push({ type: T.SEMI, value: ";" });
 
     const lines = rebuild(tokens, rules);
-    let result = postProcess(lines);
+    let result = postProcess(lines, rules);
 
     // Prepend ; back to WITH for ;WITH CTE pattern
     if (hasLeadingSemicolon) {

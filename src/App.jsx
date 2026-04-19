@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import Header from "./components/Header";
-import HeroSection from "./components/HeroSection";
-import ConfigModal from "./components/ConfigModal";
-import FormatterPanel from "./components/FormatterPanel";
+import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import HeroSection from './components/HeroSection';
+import ConfigModal from './components/ConfigModal';
+import FormatterPanel from './components/FormatterPanel';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("darkMode");
+    const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : true;
   });
   const [showConfig, setShowConfig] = useState(false);
@@ -14,7 +14,7 @@ export default function App() {
 
   // Check localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("sqlStyleRules");
+    const saved = localStorage.getItem('sqlStyleRules');
     setIsConfigured(!!saved);
   }, []);
 
@@ -22,11 +22,11 @@ export default function App() {
   useEffect(() => {
     const html = document.documentElement;
     if (darkMode) {
-      html.classList.add("dark");
+      html.classList.add('dark');
     } else {
-      html.classList.remove("dark");
+      html.classList.remove('dark');
     }
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
   const handleConfigSuccess = () => {
@@ -35,7 +35,7 @@ export default function App() {
   };
 
   const handleClearConfig = () => {
-    localStorage.removeItem("sqlStyleRules");
+    localStorage.removeItem('sqlStyleRules');
     setIsConfigured(false);
   };
 
@@ -79,7 +79,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-2 text-center border-t border-slate-200/50 dark:border-white/5 mt-4">
+      <footer className="relative z-10 py-4 text-center border-t border-slate-200/50 dark:border-white/5 mt-4">
         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
           Made with <span className="text-red-500">❤️</span> by Pankaj Khuswaha and AI
         </p>

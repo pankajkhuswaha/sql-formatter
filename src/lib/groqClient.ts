@@ -1,14 +1,14 @@
 // @ts-nocheck
 
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.3-70b-versatile';
 
 const SYSTEM_PROMPT = `You are a SQL formatting style analyzer. You MUST respond ONLY with raw JSON — no markdown, no code fences, no explanation, no text before or after. Just the JSON object. Analyze every tiny detail of the formatting. You support all SQL dialects: PostgreSQL, MySQL, MSSQL/T-SQL, and stored procedures/functions/views/triggers.`;
 
 // Dialect-specific context injected into the prompt so the AI knows exact syntax rules
 const DIALECT_CONTEXT = {
   postgresql: {
-    label: "PostgreSQL",
+    label: 'PostgreSQL',
     notes: `This is PostgreSQL SQL. Be aware of:
 - Dollar-quoted strings: $$ ... $$ and $tag$ ... $tag$
 - Type casts using :: operator (e.g. value::text, now()::date)
@@ -21,7 +21,7 @@ const DIALECT_CONTEXT = {
 - RAISE NOTICE / RAISE EXCEPTION in PL/pgSQL functions`,
   },
   mysql: {
-    label: "MySQL",
+    label: 'MySQL',
     notes: `This is MySQL (or MariaDB) SQL. Be aware of:
 - Identifiers are backtick-quoted: \`table_name\`, \`column\`
 - LIMIT / OFFSET for pagination (no FETCH NEXT)
@@ -34,7 +34,7 @@ const DIALECT_CONTEXT = {
 - DATE_FORMAT(), STR_TO_DATE(), NOW() date functions`,
   },
   mssql: {
-    label: "MSSQL / T-SQL",
+    label: 'MSSQL / T-SQL',
     notes: `This is Microsoft SQL Server T-SQL. Be aware of:
 - Identifiers are bracket-quoted: [schema].[table], [column]
 - TOP N instead of LIMIT
@@ -129,29 +129,26 @@ SQL query to analyze:
  * @param {string} dialect - User-selected database dialect: "postgresql"|"mysql"|"mssql"
  * @returns {Promise<object>} The extracted style rules
  */
-export async function extractStyle(sampleSQL, dialect = "postgresql") {
-  const apiKey =
-    localStorage.getItem("groqApiKey") ||
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_GROQ_API_KEY) ||
-    "";
+export async function extractStyle(sampleSQL, dialect = 'postgresql') {
+  const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) || '';
 
   if (!apiKey) {
-    throw new Error("No API key provided. Enter your Groq API key above.");
+    throw new Error('No API key provided. Enter your Groq API key above.');
   }
 
   const userPrompt = buildPrompt(dialect) + sampleSQL;
 
   const response = await fetch(GROQ_API_URL, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model: MODEL,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
       ],
       temperature: 0.1,
       max_tokens: 2048,
@@ -159,31 +156,29 @@ export async function extractStyle(sampleSQL, dialect = "postgresql") {
   });
 
   if (response.status === 401) {
-    throw new Error("Invalid API key. Please check your Groq API key.");
+    throw new Error('Invalid API key. Please check your Groq API key.');
   }
   if (response.status === 429) {
-    throw new Error("Rate limit hit. Please wait a moment and try again.");
+    throw new Error('Rate limit hit. Please wait a moment and try again.');
   }
   if (!response.ok) {
     throw new Error(`API error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
-  let content = data.choices?.[0]?.message?.content ?? "";
+  let content = data.choices?.[0]?.message?.content ?? '';
 
   // Strip accidental markdown code fences
   content = content
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
     .trim();
 
   let rules;
   try {
     rules = JSON.parse(content);
   } catch {
-    throw new Error(
-      "Could not extract style — the AI response was not valid JSON. Try pasting a more complete SQL query."
-    );
+    throw new Error('Could not extract style — the AI response was not valid JSON. Try pasting a more complete SQL query.');
   }
 
   // Post-process: verify AI output against actual sample SQL patterns
@@ -196,14 +191,14 @@ export async function extractStyle(sampleSQL, dialect = "postgresql") {
  * The AI often misses AND/OR newline patterns and ON indentation.
  */
 function postProcessRules(rules, sampleSQL) {
-  const lines = sampleSQL.split("\n").map(l => l.trimEnd());
+  const lines = sampleSQL.split('\n').map((l) => l.trimEnd());
 
   // Check if AND or OR appear at the start of any line (with possible indentation)
-  const andOrAtLineStart = lines.some(l => /^\s+(AND|OR)\b/i.test(l));
+  const andOrAtLineStart = lines.some((l) => /^\s+(AND|OR)\b/i.test(l));
   if (andOrAtLineStart) {
     rules.andOrOnNewline = true;
     // Check if they're indented
-    const andOrLine = lines.find(l => /^\s+(AND|OR)\b/i.test(l));
+    const andOrLine = lines.find((l) => /^\s+(AND|OR)\b/i.test(l));
     if (andOrLine) {
       const indent = andOrLine.match(/^(\s+)/)?.[1]?.length || 0;
       rules.andOrIndented = indent > 0;
@@ -211,17 +206,42 @@ function postProcessRules(rules, sampleSQL) {
   }
 
   // Comprehensive: scan every line for keywords that start at the beginning
-  const kwsUpper = new Set((rules.newlineBeforeKeywords || []).map(k => k.toUpperCase()));
+  const kwsUpper = new Set((rules.newlineBeforeKeywords || []).map((k) => k.toUpperCase()));
   const multiWordPatterns = [
-    "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN",
-    "LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "CROSS JOIN",
-    "GROUP BY", "ORDER BY", "PARTITION BY",
-    "INSERT INTO", "UNION ALL", "NOT IN", "NOT EXISTS",
+    'LEFT OUTER JOIN',
+    'RIGHT OUTER JOIN',
+    'FULL OUTER JOIN',
+    'LEFT JOIN',
+    'RIGHT JOIN',
+    'INNER JOIN',
+    'CROSS JOIN',
+    'GROUP BY',
+    'ORDER BY',
+    'PARTITION BY',
+    'INSERT INTO',
+    'UNION ALL',
+    'NOT IN',
+    'NOT EXISTS',
   ];
   const singleKws = [
-    "SELECT", "FROM", "WHERE", "JOIN", "ON", "HAVING", "LIMIT", "OFFSET",
-    "SET", "VALUES", "UPDATE", "DELETE", "INSERT", "UNION", "INTERSECT", "EXCEPT",
-    "WITH", "RETURNING",
+    'SELECT',
+    'FROM',
+    'WHERE',
+    'JOIN',
+    'ON',
+    'HAVING',
+    'LIMIT',
+    'OFFSET',
+    'SET',
+    'VALUES',
+    'UPDATE',
+    'DELETE',
+    'INSERT',
+    'UNION',
+    'INTERSECT',
+    'EXCEPT',
+    'WITH',
+    'RETURNING',
   ];
 
   for (const line of lines) {
@@ -231,7 +251,7 @@ function postProcessRules(rules, sampleSQL) {
     // Check multi-word keywords first
     let matched = false;
     for (const mwk of multiWordPatterns) {
-      if (trimmed.startsWith(mwk + " ") || trimmed === mwk) {
+      if (trimmed.startsWith(mwk + ' ') || trimmed === mwk) {
         if (!kwsUpper.has(mwk)) {
           rules.newlineBeforeKeywords.push(mwk);
           kwsUpper.add(mwk);
@@ -244,7 +264,7 @@ function postProcessRules(rules, sampleSQL) {
 
     // Check single keywords
     for (const kw of singleKws) {
-      if (trimmed.startsWith(kw + " ") || trimmed === kw || trimmed.startsWith(kw + "\t")) {
+      if (trimmed.startsWith(kw + ' ') || trimmed === kw || trimmed.startsWith(kw + '\t')) {
         if (!kwsUpper.has(kw)) {
           rules.newlineBeforeKeywords.push(kw);
           kwsUpper.add(kw);
@@ -255,12 +275,12 @@ function postProcessRules(rules, sampleSQL) {
   }
 
   // Check if ON appears indented on its own line (after JOIN)
-  const onAtLineStart = lines.some(l => /^\s+ON\b/i.test(l));
+  const onAtLineStart = lines.some((l) => /^\s+ON\b/i.test(l));
   if (onAtLineStart) {
     rules.joinConditionIndent = true;
   }
   // Check if ON stays on the same line as JOIN
-  const onSameLineAsJoin = lines.some(l => /\bjoin\b.*\bon\b/i.test(l));
+  const onSameLineAsJoin = lines.some((l) => /\bjoin\b.*\bon\b/i.test(l));
   if (onSameLineAsJoin && !onAtLineStart) {
     rules.joinConditionIndent = false;
   }
@@ -287,20 +307,25 @@ function postProcessRules(rules, sampleSQL) {
   }
 
   // Guess max line width from sample
-  const maxLen = Math.max(...lines.map(l => l.length));
+  const maxLen = Math.max(...lines.map((l) => l.length));
   if (maxLen > 0 && (!rules.maxLineWidth || rules.maxLineWidth < 80)) {
     rules.maxLineWidth = Math.ceil(Math.max(80, maxLen) / 20) * 20;
   }
 
   // Detect columnsPerRow from SELECT block
-  const selectIdx = lines.findIndex(l => /^\s*SELECT\b/i.test(l));
+  const selectIdx = lines.findIndex((l) => /^\s*SELECT\b/i.test(l));
   if (selectIdx !== -1) {
     let multiColOnLine = false;
     let maxColsOnLine = 1;
     for (let li = selectIdx; li < lines.length; li++) {
       const lineTrimmed = lines[li].trim().toUpperCase();
-      if (li > selectIdx && /^(FROM|WHERE|JOIN|LEFT|RIGHT|INNER|FULL|CROSS|GROUP|ORDER|HAVING|LIMIT|UNION|SET|VALUES|UPDATE|DELETE)\b/.test(lineTrimmed)) break;
-      let depth = 0, commaCount = 0;
+      if (
+        li > selectIdx &&
+        /^(FROM|WHERE|JOIN|LEFT|RIGHT|INNER|FULL|CROSS|GROUP|ORDER|HAVING|LIMIT|UNION|SET|VALUES|UPDATE|DELETE)\b/.test(lineTrimmed)
+      )
+        break;
+      let depth = 0,
+        commaCount = 0;
       for (const ch of lines[li]) {
         if (ch === '(') depth++;
         else if (ch === ')') depth--;
@@ -320,9 +345,9 @@ function postProcessRules(rules, sampleSQL) {
   }
 
   // Ensure numeric defaults
-  rules.spaceAfterComma = typeof rules.spaceAfterComma === "number" ? rules.spaceAfterComma : 1;
-  rules.maxLineWidth = typeof rules.maxLineWidth === "number" ? rules.maxLineWidth : 120;
-  rules.columnsPerRow = typeof rules.columnsPerRow === "number" ? Math.max(1, rules.columnsPerRow) : 1;
+  rules.spaceAfterComma = typeof rules.spaceAfterComma === 'number' ? rules.spaceAfterComma : 1;
+  rules.maxLineWidth = typeof rules.maxLineWidth === 'number' ? rules.maxLineWidth : 120;
+  rules.columnsPerRow = typeof rules.columnsPerRow === 'number' ? Math.max(1, rules.columnsPerRow) : 1;
 
   return rules;
 }

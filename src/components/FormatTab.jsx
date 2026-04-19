@@ -136,7 +136,7 @@ export default function FormatTab({ hasStyle }) {
             id="formatted-output"
             className="p-4 bg-black/30 border border-white/10 rounded-xl
                        text-cyan-200 text-sm font-mono leading-relaxed
-                       overflow-x-auto whitespace-pre"
+                       overflow-auto whitespace-pre max-h-[60vh]"
           >
             {outputSQL}
           </pre>

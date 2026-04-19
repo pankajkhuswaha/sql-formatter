@@ -112,11 +112,11 @@ export default function FormatterPanel() {
           </div>
 
           {/* Right Side: Output */}
-          <div className={`flex-col h-full bg-slate-50/40 dark:bg-[#0a0a0a]/60 relative ${activeTab === 'input' ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`flex-col h-full overflow-hidden bg-slate-50/40 dark:bg-[#0a0a0a]/60 relative ${activeTab === 'input' ? 'hidden md:flex' : 'flex'}`}>
             <div className="absolute top-3 right-4 z-10 px-2 py-1 rounded-md bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 text-[10px] font-bold text-green-500 uppercase tracking-widest select-none pointer-events-none">
               Your Standard
             </div>
-            <div className="w-full h-full p-6 overflow-auto">
+            <div className="w-full h-full min-h-0 p-6 overflow-auto">
               {outputSQL ? (
                 <pre className="editor-textarea text-slate-900 dark:text-[#a5d6ff]">{outputSQL}</pre>
               ) : (

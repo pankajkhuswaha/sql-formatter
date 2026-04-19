@@ -592,6 +592,7 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                 <span className="text-[11px] text-red-400 font-medium whitespace-nowrap">Reset everything?</span>
                 <button
                   onClick={() => {
+                    localStorage.removeItem("sqlStyleRules_seeded"); // allow re-seed on next load
                     onClearConfig();
                     setRules({ ...DEFAULT_RULES });
                     setStep("extract");

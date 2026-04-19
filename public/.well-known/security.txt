@@ -1,0 +1,6 @@
+Contact: security@sqlformatter.app
+Expires: 2027-04-19T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://sqlformatter.app/.well-known/security.txt
+Policy: https://sqlformatter.app/security-policy
+Acknowledgments: https://sqlformatter.app/acknowledgments

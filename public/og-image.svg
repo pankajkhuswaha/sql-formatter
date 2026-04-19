@@ -1,0 +1,102 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Decorative shapes -->
+  <circle cx="150" cy="100" r="80" fill="#3b82f6" opacity="0.1" filter="url(#glow)"/>
+  <circle cx="1050" cy="550" r="120" fill="#8b5cf6" opacity="0.1" filter="url(#glow)"/>
+  <circle cx="1100" cy="80" r="60" fill="#10b981" opacity="0.08"/>
+
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accentGradient)"/>
+
+  <!-- Main content container -->
+  <g>
+    <!-- Logo/Icon area -->
+    <rect x="50" y="80" width="120" height="120" rx="20" fill="#3b82f6" opacity="0.15"/>
+
+    <!-- Code brackets icon -->
+    <text x="110" y="160" font-size="80" font-weight="bold" fill="#3b82f6" text-anchor="middle" font-family="monospace">&lt;&gt;</text>
+
+    <!-- Main headline -->
+    <text x="220" y="120" font-size="56" font-weight="bold" fill="#ffffff" font-family="Arial, sans-serif">
+      SQL Formatter
+    </text>
+
+    <!-- Subheading -->
+    <text x="220" y="170" font-size="28" fill="#a0aec0" font-family="Arial, sans-serif">
+      AI-Powered Style Learning
+    </text>
+
+    <!-- Divider -->
+    <line x1="220" y1="190" x2="1050" y2="190" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+
+    <!-- Features section -->
+    <g>
+      <!-- Feature 1 -->
+      <circle cx="280" cy="280" r="8" fill="#10b981"/>
+      <text x="310" y="287" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">Learn your exact formatting style</text>
+
+      <!-- Feature 2 -->
+      <circle cx="280" cy="350" r="8" fill="#10b981"/>
+      <text x="310" y="357" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">100% local processing in browser</text>
+
+      <!-- Feature 3 -->
+      <circle cx="280" cy="420" r="8" fill="#10b981"/>
+      <text x="310" y="427" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">No continuous API costs</text>
+
+      <!-- Feature 4 -->
+      <circle cx="280" cy="490" r="8" fill="#10b981"/>
+      <text x="310" y="497" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">Format AI-generated SQL instantly</text>
+    </g>
+
+    <!-- Right side - Visual element -->
+    <g opacity="0.8">
+      <!-- SQL code preview -->
+      <rect x="750" y="240" width="420" height="280" rx="12" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+
+      <text x="770" y="270" font-size="14" fill="#64748b" font-family="monospace">SELECT * FROM users</text>
+      <text x="770" y="295" font-size="14" fill="#64748b" font-family="monospace">WHERE status = 'active'</text>
+      <text x="770" y="320" font-size="14" fill="#64748b" font-family="monospace">AND created_at > NOW();</text>
+
+      <!-- Arrow -->
+      <path d="M 900 340 L 900 360" stroke="#3b82f6" stroke-width="3" fill="none"/>
+      <polygon points="900,370 895,360 905,360" fill="#3b82f6"/>
+
+      <text x="770" y="420" font-size="14" fill="#10b981" font-family="monospace">SELECT * FROM users</text>
+      <text x="770" y="445" font-size="14" fill="#10b981" font-family="monospace">  WHERE status = 'active'</text>
+      <text x="770" y="470" font-size="14" fill="#10b981" font-family="monospace">    AND created_at > NOW()</text>
+      <text x="770" y="495" font-size="14" fill="#10b981" font-family="monospace">;</text>
+    </g>
+
+    <!-- Bottom CTA -->
+    <text x="600" y="590" font-size="18" fill="#94a3b8" text-anchor="middle" font-family="Arial, sans-serif">
+      sqlformatter.app • Open Source • Zero Dependencies
+    </text>
+  </g>
+
+  <!-- Decorative corner elements -->
+  <rect x="1150" y="10" width="50" height="4" fill="#3b82f6" opacity="0.5"/>
+  <rect x="1150" y="10" width="4" height="50" fill="#3b82f6" opacity="0.5"/>
+</svg>

@@ -1,0 +1,26 @@
+# Robots.txt for SQL Formatter
+# Allow all search engines to crawl and index the site
+
+User-agent: *
+Allow: /
+Disallow: /node_modules/
+Disallow: /dist/
+Disallow: /*.map$
+Disallow: *.js.map
+Disallow: *.css.map
+
+# Specific rules for popular search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Crawl delay settings (optional)
+Crawl-delay: 0
+
+# Sitemap
+Sitemap: https://sqlformatter.app/sitemap.xml

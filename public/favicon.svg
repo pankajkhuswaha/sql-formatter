@@ -1,0 +1,42 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="faviconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="innerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#faviconGradient)"/>
+
+  <!-- Inner circle for contrast -->
+  <circle cx="256" cy="256" r="240" fill="#ffffff" opacity="0.05"/>
+
+  <!-- SQL code icon - brackets with database concept -->
+  <g transform="translate(256, 256)">
+    <!-- Left bracket -->
+    <path d="M -80 -60 L -100 -60 L -100 60 L -80 60" stroke="#ffffff" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)"/>
+
+    <!-- Right bracket -->
+    <path d="M 80 -60 L 100 -60 L 100 60 L 80 60" stroke="#ffffff" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)"/>
+
+    <!-- Center dot/database -->
+    <circle cx="0" cy="0" r="20" fill="#ffffff" filter="url(#shadow)"/>
+
+    <!-- Horizontal lines (database concept) -->
+    <line x1="-40" y1="-25" x2="40" y2="-25" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <line x1="-40" y1="25" x2="40" y2="25" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  </g>
+
+  <!-- Accent corner -->
+  <circle cx="420" cy="92" r="35" fill="#10b981" opacity="0.6"/>
+</svg>

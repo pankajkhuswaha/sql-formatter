@@ -1,34 +1,34 @@
 // @ts-nocheck
 
-import { useState, useEffect } from "react";
-import { extractStyle } from "../lib/groqClient";
+import { useState } from 'react';
+import { extractStyle } from '../lib/groqClient';
 
 const DEFAULT_RULES = {
   // ── Dialect ──────────────────────────────────────────────
-  dialectMode: "postgresql",          // "postgresql" | "mysql" | "mssql"
+  dialectMode: 'postgresql', // "postgresql" | "mysql" | "mssql"
 
   // ── Keyword / Identifier ─────────────────────────────────
-  keywordCase: "upper",
-  indentChar: " ",
+  keywordCase: 'upper',
+  indentChar: ' ',
   indentSize: 4,
-  aliasKeyword: "AS",
+  aliasKeyword: 'AS',
 
   // ── SELECT Columns ───────────────────────────────────────
   selectColumnsOnNewLine: true,
-  columnsPerRow: 1,                   // columns per row when selectColumnsOnNewLine = false
-  commaPosition: "end",              // "end" | "start"
+  columnsPerRow: 1, // columns per row when selectColumnsOnNewLine = false
+  commaPosition: 'end', // "end" | "start"
   columnIndent: false,
   columnIndentSize: 4,
 
   // ── Line / Width ─────────────────────────────────────────
-  maxLineWidth: 120,                  // 0 = unlimited
-  alignColumnAliases: false,         // pad col names so aliases line up
+  maxLineWidth: 120, // 0 = unlimited
+  alignColumnAliases: false, // pad col names so aliases line up
 
   // ── Spacing ──────────────────────────────────────────────
-  spaceAfterComma: 1,                // spaces after comma (inside inline exprs)
-  spaceAroundOperators: true,        // space around = < > != etc.
-  spaceInsideParens: false,          // space after ( and before )
-  spaceAfterFunctionName: false,     // space between func name and (
+  spaceAfterComma: 1, // spaces after comma (inside inline exprs)
+  spaceAroundOperators: true, // space around = < > != etc.
+  spaceInsideParens: false, // space after ( and before )
+  spaceAfterFunctionName: false, // space between func name and (
 
   // ── JOIN & Conditions ────────────────────────────────────
   joinConditionIndent: true,
@@ -39,39 +39,36 @@ const DEFAULT_RULES = {
   linesBetweenClauses: 0,
   semicolonOnNewline: false,
   openParenOnNewline: false,
-  closingParenStyle: "newline",
-  newlineBeforeKeywords: [
-    "SELECT","FROM","WHERE","JOIN","LEFT JOIN","ON",
-    "GROUP BY","ORDER BY","HAVING",
-  ],
+  closingParenStyle: 'newline',
+  newlineBeforeKeywords: ['SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT JOIN', 'ON', 'GROUP BY', 'ORDER BY', 'HAVING'],
 };
 
 // Dialect preset overrides
 const DIALECT_PRESETS = {
   mssql: {
-    dialectMode: "mssql",
-    keywordCase: "upper",
-    aliasKeyword: "AS",
+    dialectMode: 'mssql',
+    keywordCase: 'upper',
+    aliasKeyword: 'AS',
     indentSize: 4,
-    commaPosition: "end",
+    commaPosition: 'end',
     spaceInsideParens: false,
     maxLineWidth: 120,
   },
   mysql: {
-    dialectMode: "mysql",
-    keywordCase: "upper",
-    aliasKeyword: "AS",
+    dialectMode: 'mysql',
+    keywordCase: 'upper',
+    aliasKeyword: 'AS',
     indentSize: 2,
-    commaPosition: "end",
+    commaPosition: 'end',
     spaceInsideParens: false,
     maxLineWidth: 100,
   },
   postgresql: {
-    dialectMode: "postgresql",
-    keywordCase: "upper",
-    aliasKeyword: "AS",
+    dialectMode: 'postgresql',
+    keywordCase: 'upper',
+    aliasKeyword: 'AS',
     indentSize: 4,
-    commaPosition: "end",
+    commaPosition: 'end',
     spaceInsideParens: false,
     maxLineWidth: 120,
   },
@@ -95,7 +92,9 @@ function Toggle({ checked, onChange, label, hint }) {
         onClick={() => onChange(!checked)}
         className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 flex-shrink-0 ${checked ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`}
       >
-        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+        <span
+          className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`}
+        />
       </button>
     </label>
   );
@@ -113,8 +112,10 @@ function Select({ value, onChange, label, options, hint }) {
         onChange={(e) => onChange(e.target.value)}
         className="px-2 py-1 bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 min-w-[110px] flex-shrink-0"
       >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
         ))}
       </select>
     </label>
@@ -144,9 +145,7 @@ function SectionTitle({ children, icon }) {
   return (
     <div className="flex items-center gap-1.5 mt-5 mb-2 first:mt-0">
       {icon && <span className="text-base leading-none">{icon}</span>}
-      <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-        {children}
-      </h4>
+      <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{children}</h4>
     </div>
   );
 }
@@ -155,28 +154,28 @@ function SectionTitle({ children, icon }) {
 
 const DIALECTS = [
   {
-    id: "postgresql",
-    label: "PostgreSQL",
-    icon: "🐘",
-    desc: "pg, Supabase, Neon…",
-    color: "from-blue-500/20 to-cyan-500/20 border-blue-500/40",
-    activeRing: "ring-blue-500",
+    id: 'postgresql',
+    label: 'PostgreSQL',
+    icon: '🐘',
+    desc: 'pg, Supabase, Neon…',
+    color: 'from-blue-500/20 to-cyan-500/20 border-blue-500/40',
+    activeRing: 'ring-blue-500',
   },
   {
-    id: "mysql",
-    label: "MySQL",
-    icon: "🐬",
-    desc: "MySQL, MariaDB…",
-    color: "from-orange-500/20 to-yellow-500/20 border-orange-500/40",
-    activeRing: "ring-orange-500",
+    id: 'mysql',
+    label: 'MySQL',
+    icon: '🐬',
+    desc: 'MySQL, MariaDB…',
+    color: 'from-orange-500/20 to-yellow-500/20 border-orange-500/40',
+    activeRing: 'ring-orange-500',
   },
   {
-    id: "mssql",
-    label: "MSSQL / T-SQL",
-    icon: "🪟",
-    desc: "SQL Server, Azure SQL…",
-    color: "from-indigo-500/20 to-purple-500/20 border-indigo-500/40",
-    activeRing: "ring-indigo-500",
+    id: 'mssql',
+    label: 'MSSQL / T-SQL',
+    icon: '🪟',
+    desc: 'SQL Server, Azure SQL…',
+    color: 'from-indigo-500/20 to-purple-500/20 border-indigo-500/40',
+    activeRing: 'ring-indigo-500',
   },
 ];
 
@@ -194,15 +193,16 @@ function DialectSelector({ value, onChange }) {
               flex flex-col items-center gap-1 p-2.5 rounded-xl border text-center
               transition-all duration-200 text-xs font-medium
               bg-gradient-to-br ${d.color}
-              ${active
-                ? `ring-2 ${d.activeRing} text-slate-900 dark:text-white shadow-md`
-                : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              ${
+                active
+                  ? `ring-2 ${d.activeRing} text-slate-900 dark:text-white shadow-md`
+                  : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }
             `}
           >
             <span className="text-xl">{d.icon}</span>
             <span className="font-semibold leading-tight">{d.label}</span>
-            <span className="text-[9px] text-slate-400 leading-tight">{d.desc}</span>
+            {/* <span className="text-[9px] text-slate-400 leading-tight">{d.desc}</span> */}
           </button>
         );
       })}
@@ -213,37 +213,30 @@ function DialectSelector({ value, onChange }) {
 // ─── Main Modal ──────────────────────────────────────────────────────────────
 
 export default function ConfigModal({ onClose, onConfigured, onClearConfig, isConfigured }) {
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("groqApiKey") || ""
-  );
-  const [sampleSQL, setSampleSQL] = useState("");
+  const [sampleSQL, setSampleSQL] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
-  const [step, setStep] = useState(isConfigured ? "edit" : "extract");
+  const [step, setStep] = useState(isConfigured ? 'edit' : 'extract');
   const [rules, setRules] = useState(() => {
-    const saved = localStorage.getItem("sqlStyleRules");
+    const saved = localStorage.getItem('sqlStyleRules');
     return saved ? { ...DEFAULT_RULES, ...JSON.parse(saved) } : { ...DEFAULT_RULES };
   });
   // dialect is driven from rules.dialectMode; derive a local convenience
-  const dialect = rules.dialectMode || "postgresql";
-
-  useEffect(() => {
-    localStorage.setItem("groqApiKey", apiKey);
-  }, [apiKey]);
+  const dialect = rules.dialectMode || 'postgresql';
 
   const handleExtractStyle = async () => {
     if (!sampleSQL.trim()) {
-      setError("Please paste a sample SQL query first.");
+      setError('Please paste a sample SQL query first.');
       return;
     }
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const extractedRules = await extractStyle(sampleSQL, dialect);
       // Preserve the dialect the user picked in Step 1
       setRules((prev) => ({ ...DEFAULT_RULES, ...prev, ...extractedRules, dialectMode: dialect }));
-      setStep("edit");
+      setStep('edit');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -257,27 +250,23 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
   };
 
   const handleSave = () => {
-    localStorage.setItem("sqlStyleRules", JSON.stringify(rules));
+    localStorage.setItem('sqlStyleRules', JSON.stringify(rules));
     onConfigured();
   };
 
   const updateRule = (key, value) => {
-    setRules(prev => ({ ...prev, [key]: value }));
+    setRules((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-xl bg-white dark:bg-[#0f1117] rounded-2xl shadow-2xl shadow-black/30 border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col animate-scale-in max-h-[92vh]">
-
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10 shrink-0">
           <h3 className="text-base font-semibold text-slate-800 dark:text-white flex items-center gap-2">
             <span>⚙️</span> Formatter Configuration
           </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors p-1"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors p-1">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -288,16 +277,16 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
         <div className="px-4 pt-3 shrink-0">
           <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
             {[
-              { id: "extract", label: "1. Analyze Sample" },
-              { id: "edit", label: "2. Adjust Rules" },
-            ].map(tab => (
+              { id: 'extract', label: '1. Analyze Sample' },
+              { id: 'edit', label: '2. Adjust Rules' },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setStep(tab.id)}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   step === tab.id
-                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 {tab.label}
@@ -308,41 +297,13 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
-
-          {/* ── Step 1: Extract ── */}
-          {step === "extract" && (
+          {step === 'extract' && (
             <div className="space-y-4 animate-fade-in">
-
-              {/* API Key */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Groq API Key</label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="gsk_..."
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all"
-                />
-                <p className="text-[11px] text-slate-400">
-                  Get yours at <a href="https://console.groq.com" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">console.groq.com</a>
-                </p>
-              </div>
-
-              {/* Database Dialect */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                    Which database are you using?
-                  </label>
-                  <span className="text-[10px] text-slate-400 italic">gives AI the right dialect context</span>
+                  <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Which database are you using?</label>
                 </div>
                 <DialectSelector value={dialect} onChange={handleDialectChange} />
-                {/* Dialect hint */}
-                <p className="text-[10px] text-blue-400/80 bg-blue-500/5 border border-blue-500/10 rounded-lg px-2.5 py-1.5 leading-snug">
-                  {dialect === "mssql" && "💡 T-SQL mode: GO separators, [bracket] identifiers, TOP / NOLOCK, TRY/CATCH blocks"}
-                  {dialect === "mysql" && "💡 MySQL mode: backtick identifiers, LIMIT / OFFSET, IF() / IFNULL(), GROUP_CONCAT"}
-                  {dialect === "postgresql" && "💡 PostgreSQL mode: $$ dollar-quoting, :: casts, RETURNING, ON CONFLICT, ILIKE"}
-                </p>
               </div>
 
               {/* Sample SQL */}
@@ -373,7 +334,7 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                 ) : (
                   <>
                     <span>🔍</span>
-                    Analyze {DIALECTS.find(d => d.id === dialect)?.label} Style →
+                    Analyze Style →
                   </>
                 )}
               </button>
@@ -381,36 +342,34 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
           )}
 
           {/* ── Step 2: Edit Rules ── */}
-          {step === "edit" && (
+          {step === 'edit' && (
             <div className="space-y-1 animate-fade-in">
-
-              {/* DATABASE DIALECT — quick-change only, no description clutter */}
-              <SectionTitle icon="🗄️">Database Dialect</SectionTitle>
+              {/* <SectionTitle icon="🗄️">Database Dialect</SectionTitle>
               <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
-                <DialectSelector value={rules.dialectMode || "postgresql"} onChange={handleDialectChange} />
-              </div>
+                <DialectSelector value={rules.dialectMode || 'postgresql'} onChange={handleDialectChange} />
+              </div> */}
 
               {/* KEYWORDS */}
               <SectionTitle icon="🔤">Keywords & Identifiers</SectionTitle>
               <div className="space-y-2.5 p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
                 <Select
                   label="Keyword Case"
-                  value={rules.keywordCase || "upper"}
-                  onChange={(v) => updateRule("keywordCase", v)}
+                  value={rules.keywordCase || 'upper'}
+                  onChange={(v) => updateRule('keywordCase', v)}
                   options={[
-                    { value: "upper", label: "UPPER" },
-                    { value: "lower", label: "lower" },
-                    { value: "title", label: "Title" },
+                    { value: 'upper', label: 'UPPER' },
+                    { value: 'lower', label: 'lower' },
+                    { value: 'title', label: 'Title' },
                   ]}
                 />
                 <Select
                   label="Alias Keyword"
-                  value={rules.aliasKeyword || "AS"}
-                  onChange={(v) => updateRule("aliasKeyword", v)}
+                  value={rules.aliasKeyword || 'AS'}
+                  onChange={(v) => updateRule('aliasKeyword', v)}
                   options={[
-                    { value: "AS", label: "AS" },
-                    { value: "as", label: "as" },
-                    { value: "none", label: "None (omit)" },
+                    { value: 'AS', label: 'AS' },
+                    { value: 'as', label: 'as' },
+                    { value: 'none', label: 'None (omit)' },
                   ]}
                 />
               </div>
@@ -420,18 +379,18 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
               <div className="space-y-2.5 p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
                 <Select
                   label="Indent Character"
-                  value={rules.indentChar === "\t" ? "tab" : "space"}
-                  onChange={(v) => updateRule("indentChar", v === "tab" ? "\t" : " ")}
+                  value={rules.indentChar === '\t' ? 'tab' : 'space'}
+                  onChange={(v) => updateRule('indentChar', v === 'tab' ? '\t' : ' ')}
                   options={[
-                    { value: "space", label: "Spaces" },
-                    { value: "tab", label: "Tabs" },
+                    { value: 'space', label: 'Spaces' },
+                    { value: 'tab', label: 'Tabs' },
                   ]}
                 />
                 <NumberInput
                   label="Indent Size"
                   hint="spaces per indent level"
                   value={rules.indentSize || 4}
-                  onChange={(v) => updateRule("indentSize", v)}
+                  onChange={(v) => updateRule('indentSize', v)}
                   min={1}
                   max={8}
                 />
@@ -444,32 +403,32 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                   label="Each column on new line"
                   hint="one column per line in SELECT"
                   checked={rules.selectColumnsOnNewLine !== false}
-                  onChange={(v) => updateRule("selectColumnsOnNewLine", v)}
+                  onChange={(v) => updateRule('selectColumnsOnNewLine', v)}
                 />
                 {!rules.selectColumnsOnNewLine && (
                   <NumberInput
                     label="Columns per row"
                     hint="how many columns before line break"
                     value={rules.columnsPerRow || 3}
-                    onChange={(v) => updateRule("columnsPerRow", Math.max(1, v))}
+                    onChange={(v) => updateRule('columnsPerRow', Math.max(1, v))}
                     min={1}
                     max={20}
                   />
                 )}
                 <Select
                   label="Comma Position"
-                  value={rules.commaPosition || "end"}
-                  onChange={(v) => updateRule("commaPosition", v)}
+                  value={rules.commaPosition || 'end'}
+                  onChange={(v) => updateRule('commaPosition', v)}
                   options={[
-                    { value: "end", label: "End of line  (x," },
-                    { value: "start", label: "Start of line  (, x" },
+                    { value: 'end', label: 'End of line  (x,' },
+                    { value: 'start', label: 'Start of line  (, x' },
                   ]}
                 />
                 <Toggle
                   label="Align column aliases"
                   hint="pad col names so AS aliases line up"
                   checked={rules.alignColumnAliases === true}
-                  onChange={(v) => updateRule("alignColumnAliases", v)}
+                  onChange={(v) => updateRule('alignColumnAliases', v)}
                 />
               </div>
 
@@ -480,7 +439,7 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                   label="Max line width"
                   hint="chars before auto-wrap (0 = unlimited)"
                   value={rules.maxLineWidth ?? 120}
-                  onChange={(v) => updateRule("maxLineWidth", v)}
+                  onChange={(v) => updateRule('maxLineWidth', v)}
                   min={0}
                   max={300}
                 />
@@ -493,7 +452,7 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                   label="Spaces after comma"
                   hint="inside function calls / IN lists"
                   value={rules.spaceAfterComma ?? 1}
-                  onChange={(v) => updateRule("spaceAfterComma", Math.max(0, Math.min(4, v)))}
+                  onChange={(v) => updateRule('spaceAfterComma', Math.max(0, Math.min(4, v)))}
                   min={0}
                   max={4}
                 />
@@ -501,19 +460,19 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                   label="Space around operators"
                   hint="a = b  vs  a=b"
                   checked={rules.spaceAroundOperators !== false}
-                  onChange={(v) => updateRule("spaceAroundOperators", v)}
+                  onChange={(v) => updateRule('spaceAroundOperators', v)}
                 />
                 <Toggle
                   label="Space inside parentheses"
                   hint="( x )  vs  (x)"
                   checked={rules.spaceInsideParens === true}
-                  onChange={(v) => updateRule("spaceInsideParens", v)}
+                  onChange={(v) => updateRule('spaceInsideParens', v)}
                 />
                 <Toggle
                   label="Space after function name"
                   hint="COUNT (x)  vs  COUNT(x)"
                   checked={rules.spaceAfterFunctionName === true}
-                  onChange={(v) => updateRule("spaceAfterFunctionName", v)}
+                  onChange={(v) => updateRule('spaceAfterFunctionName', v)}
                 />
               </div>
 
@@ -524,18 +483,10 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                   label="ON on new line (indented)"
                   hint="JOIN tbl t\n    ON t.id = ..."
                   checked={rules.joinConditionIndent !== false}
-                  onChange={(v) => updateRule("joinConditionIndent", v)}
+                  onChange={(v) => updateRule('joinConditionIndent', v)}
                 />
-                <Toggle
-                  label="AND / OR on new line"
-                  checked={rules.andOrOnNewline !== false}
-                  onChange={(v) => updateRule("andOrOnNewline", v)}
-                />
-                <Toggle
-                  label="AND / OR indented"
-                  checked={rules.andOrIndented !== false}
-                  onChange={(v) => updateRule("andOrIndented", v)}
-                />
+                <Toggle label="AND / OR on new line" checked={rules.andOrOnNewline !== false} onChange={(v) => updateRule('andOrOnNewline', v)} />
+                <Toggle label="AND / OR indented" checked={rules.andOrIndented !== false} onChange={(v) => updateRule('andOrIndented', v)} />
               </div>
 
               {/* LAYOUT */}
@@ -544,25 +495,23 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                 <Toggle
                   label="Blank line between clauses"
                   checked={(rules.linesBetweenClauses || 0) === 1}
-                  onChange={(v) => updateRule("linesBetweenClauses", v ? 1 : 0)}
+                  onChange={(v) => updateRule('linesBetweenClauses', v ? 1 : 0)}
                 />
                 <Toggle
                   label="Semicolon on new line"
                   checked={rules.semicolonOnNewline === true}
-                  onChange={(v) => updateRule("semicolonOnNewline", v)}
+                  onChange={(v) => updateRule('semicolonOnNewline', v)}
                 />
                 <Select
                   label="Closing ) style"
-                  value={rules.closingParenStyle || "newline"}
-                  onChange={(v) => updateRule("closingParenStyle", v)}
+                  value={rules.closingParenStyle || 'newline'}
+                  onChange={(v) => updateRule('closingParenStyle', v)}
                   options={[
-                    { value: "newline", label: "New line" },
-                    { value: "same", label: "Same line" },
+                    { value: 'newline', label: 'New line' },
+                    { value: 'same', label: 'Same line' },
                   ]}
                 />
               </div>
-
-
             </div>
           )}
 
@@ -584,7 +533,11 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-red-400 dark:hover:text-red-400 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 Reset
               </button>
@@ -594,11 +547,11 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
                 <span className="text-[11px] text-red-400 font-medium whitespace-nowrap">Reset everything?</span>
                 <button
                   onClick={() => {
-                    localStorage.removeItem("sqlStyleRules_seeded"); // allow re-seed on next load
+                    localStorage.removeItem('sqlStyleRules_seeded'); // allow re-seed on next load
                     onClearConfig();
                     setRules({ ...DEFAULT_RULES });
-                    setStep("extract");
-                    setSampleSQL("");
+                    setStep('extract');
+                    setSampleSQL('');
                     setConfirmReset(false);
                   }}
                   className="px-2.5 py-1 text-[11px] font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all"
@@ -615,8 +568,8 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
             )}
             {!isConfigured && (
               <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                {DIALECTS.find(d => d.id === (rules.dialectMode || "postgresql"))?.icon}
-                {DIALECTS.find(d => d.id === (rules.dialectMode || "postgresql"))?.label}
+                {DIALECTS.find((d) => d.id === (rules.dialectMode || 'postgresql'))?.icon}
+                {DIALECTS.find((d) => d.id === (rules.dialectMode || 'postgresql'))?.label}
               </span>
             )}
           </div>
@@ -629,7 +582,7 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
             >
               Cancel
             </button>
-            {step === "edit" && (
+            {step === 'edit' && (
               <button
                 onClick={handleSave}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-500/20 transition-all"
@@ -639,7 +592,6 @@ export default function ConfigModal({ onClose, onConfigured, onClearConfig, isCo
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

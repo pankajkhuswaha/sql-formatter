@@ -1,10 +1,15 @@
-import { useState } from "react";
+type TabId = 'configure' | 'format';
 
-export default function TabBar({ activeTab, onTabChange }) {
+interface TabBarProps {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}
+
+export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const tabs = [
-    { id: "configure", label: "Configure", icon: "⚙️" },
-    { id: "format", label: "Format", icon: "✨" },
-  ];
+    { id: 'configure', label: 'Configure', icon: 'Config' },
+    { id: 'format', label: 'Format', icon: 'SQL' },
+  ] as const;
 
   return (
     <div className="relative flex items-center gap-1 p-1 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
@@ -18,8 +23,8 @@ export default function TabBar({ activeTab, onTabChange }) {
             transition-all duration-300 ease-out cursor-pointer
             ${
               activeTab === tab.id
-                ? "text-white bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/25"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
+                ? 'text-white bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/25'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }
           `}
         >

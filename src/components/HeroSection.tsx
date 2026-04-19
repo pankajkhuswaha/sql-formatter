@@ -1,4 +1,9 @@
-export default function HeroSection({ isConfigured, onOpenConfig }) {
+interface HeroSectionProps {
+  isConfigured: boolean;
+  onOpenConfig: () => void;
+}
+
+export default function HeroSection({ isConfigured, onOpenConfig }: HeroSectionProps) {
   return (
     <section className="relative z-10 px-4 sm:px-6 lg:px-8 pt-20 pb-6">
       <div className="max-w-5xl mx-auto">

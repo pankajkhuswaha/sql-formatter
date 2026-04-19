@@ -1,9 +1,20 @@
-export default function Header({ darkMode, onToggleDarkMode, onOpenConfig, isConfigured }) {
+interface HeaderProps {
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
+  onOpenConfig: () => void;
+  isConfigured: boolean;
+}
+
+export default function Header({
+  darkMode,
+  onToggleDarkMode,
+  onOpenConfig,
+  isConfigured,
+}: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-surface-900/70 border-b border-surface-200/60 dark:border-white/5 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-700 rounded-lg flex items-center justify-center shadow-md shadow-accent-500/20">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -15,9 +26,7 @@ export default function Header({ darkMode, onToggleDarkMode, onOpenConfig, isCon
             </h1>
           </div>
 
-          {/* Right side controls */}
           <div className="flex items-center gap-2">
-            {/* Config Button */}
             <button
               id="header-config-btn"
               onClick={onOpenConfig}
@@ -38,7 +47,6 @@ export default function Header({ darkMode, onToggleDarkMode, onOpenConfig, isCon
               )}
             </button>
 
-            {/* Dark Mode Toggle */}
             <button
               id="dark-mode-toggle"
               onClick={onToggleDarkMode}
@@ -47,7 +55,7 @@ export default function Header({ darkMode, onToggleDarkMode, onOpenConfig, isCon
                          hover:text-surface-700 dark:hover:text-surface-200
                          hover:bg-surface-100 dark:hover:bg-white/5
                          transition-all duration-200 cursor-pointer"
-              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

@@ -1,53 +1,58 @@
-import { useState, useEffect } from "react";
-import { extractStyle } from "../lib/groqClient";
+import { useEffect, useState } from 'react';
+import { extractStyle } from '../lib/groqClient';
+import { readStoredRules } from '../lib/storage';
+import type { SqlStyleRules } from '../types/sql';
 
-export default function ConfigureTab({ onStyleExtracted }) {
+interface ConfigureTabProps {
+  onStyleExtracted: (configured: boolean) => void;
+}
+
+export default function ConfigureTab({
+  onStyleExtracted,
+}: ConfigureTabProps) {
   const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("groqApiKey") || ""
+    () => localStorage.getItem('groqApiKey') || '',
   );
-  const [sampleSQL, setSampleSQL] = useState("");
-  const [styleRules, setStyleRules] = useState(() => {
-    const saved = localStorage.getItem("sqlStyleRules");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [sampleSQL, setSampleSQL] = useState('');
+  const [styleRules, setStyleRules] = useState<SqlStyleRules | null>(() =>
+    readStoredRules(),
+  );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  // Sync API key to localStorage on every keystroke
   useEffect(() => {
-    localStorage.setItem("groqApiKey", apiKey);
+    localStorage.setItem('groqApiKey', apiKey);
   }, [apiKey]);
 
   const handleExtractStyle = async () => {
     if (!sampleSQL.trim()) {
-      setError("Please paste a sample SQL query first.");
+      setError('Please paste a sample SQL query first.');
       return;
     }
 
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
       const rules = await extractStyle(sampleSQL);
-      localStorage.setItem("sqlStyleRules", JSON.stringify(rules));
+      localStorage.setItem('sqlStyleRules', JSON.stringify(rules));
       setStyleRules(rules);
       onStyleExtracted(true);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unable to extract style.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearStyle = () => {
-    localStorage.removeItem("sqlStyleRules");
+    localStorage.removeItem('sqlStyleRules');
     setStyleRules(null);
     onStyleExtracted(false);
   };
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* API Key Input */}
       <div className="space-y-2">
         <label
           htmlFor="api-key-input"
@@ -70,7 +75,7 @@ export default function ConfigureTab({ onStyleExtracted }) {
                      transition-all duration-200"
         />
         <p className="text-xs text-slate-500">
-          Get your free key at{" "}
+          Get your free key at{' '}
           <a
             href="https://console.groq.com"
             target="_blank"
@@ -82,7 +87,6 @@ export default function ConfigureTab({ onStyleExtracted }) {
         </p>
       </div>
 
-      {/* Sample SQL Input */}
       <div className="space-y-2">
         <label
           htmlFor="sample-sql-input"
@@ -106,13 +110,12 @@ export default function ConfigureTab({ onStyleExtracted }) {
         />
       </div>
 
-      {/* Action Buttons */}
       <div className="flex items-center gap-3">
         <button
           id="extract-style-btn"
           onClick={handleExtractStyle}
           disabled={loading}
-          className="relative flex items-center gap-2 px-6 py-3 
+          className="relative flex items-center gap-2 px-6 py-3
                      bg-gradient-to-r from-indigo-500 to-purple-500
                      hover:from-indigo-400 hover:to-purple-400
                      disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed
@@ -130,7 +133,7 @@ export default function ConfigureTab({ onStyleExtracted }) {
             </>
           ) : (
             <>
-              <span>🔍</span>
+              <span>Analyze</span>
               Extract My Style
             </>
           )}
@@ -147,25 +150,23 @@ export default function ConfigureTab({ onStyleExtracted }) {
                        font-medium text-sm rounded-xl
                        transition-all duration-300 cursor-pointer"
           >
-            <span>🗑️</span>
+            <span>Clear</span>
             Clear Style
           </button>
         )}
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="animate-slide-up flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <span className="text-red-400 text-lg">⚠️</span>
+          <span className="text-red-400 text-lg">!</span>
           <p className="text-red-300 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Style Preview */}
       {styleRules && (
         <div className="animate-slide-up space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-green-400 text-lg">✅</span>
+            <span className="text-green-400 text-lg">OK</span>
             <h3 className="text-sm font-semibold text-slate-300">
               Extracted Style Rules
             </h3>

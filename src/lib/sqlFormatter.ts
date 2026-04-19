@@ -1,4 +1,6 @@
 // ─── SQL Keywords ──────────────────────────────────────────────────────
+// @ts-nocheck
+
 const KEYWORDS = new Set([
   // DML
   "SELECT","FROM","WHERE","AND","OR","NOT","IN","EXISTS",

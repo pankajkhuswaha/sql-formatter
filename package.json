@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run generate-assets && vite build",
+    "build":"vite build",
     "generate-assets": "npm run generate-favicon && npm run generate-og-image",
     "generate-favicon": "node scripts/generate-favicon.js",
     "generate-og-image": "node scripts/generate-og-image.js",

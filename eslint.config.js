@@ -6,8 +6,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
   {
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+  {
     files: ['**/*.{js,jsx}'],
-    ignores: ['dist'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -33,6 +35,17 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+      sourceType: 'module',
+    },
+    rules: {
+      ...js.configs.recommended.rules,
     },
   },
 ]

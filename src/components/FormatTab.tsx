@@ -1,18 +1,22 @@
-import { useState } from "react";
-import { formatSQL } from "../lib/sqlFormatter";
+import { useState } from 'react';
+import { formatSQL } from '../lib/sqlFormatter';
+import { readStoredRules } from '../lib/storage';
 
-export default function FormatTab({ hasStyle }) {
-  const [inputSQL, setInputSQL] = useState("");
-  const [outputSQL, setOutputSQL] = useState("");
+interface FormatTabProps {
+  hasStyle: boolean;
+}
+
+export default function FormatTab({ hasStyle }: FormatTabProps) {
+  const [inputSQL, setInputSQL] = useState('');
+  const [outputSQL, setOutputSQL] = useState('');
   const [copied, setCopied] = useState(false);
 
   const handleFormat = () => {
     if (!inputSQL.trim()) return;
 
-    const saved = localStorage.getItem("sqlStyleRules");
-    if (!saved) return;
+    const rules = readStoredRules();
+    if (!rules) return;
 
-    const rules = JSON.parse(saved);
     const formatted = formatSQL(inputSQL, rules);
     setOutputSQL(formatted);
   };
@@ -24,12 +28,11 @@ export default function FormatTab({ hasStyle }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
+      const textarea = document.createElement('textarea');
       textarea.value = outputSQL;
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand("copy");
+      document.execCommand('copy');
       document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -38,23 +41,22 @@ export default function FormatTab({ hasStyle }) {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Warning Banner */}
       {!hasStyle && (
         <div className="animate-slide-up flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-          <span className="text-amber-400 text-xl">⚡</span>
+          <span className="text-amber-400 text-xl">!</span>
           <div>
             <p className="text-amber-300 text-sm font-semibold">
               No style configured
             </p>
             <p className="text-amber-400/70 text-xs mt-1">
               Switch to the Configure tab, paste a sample query, and click
+              {' '}
               &ldquo;Extract My Style&rdquo; first.
             </p>
           </div>
         </div>
       )}
 
-      {/* SQL Input */}
       <div className="space-y-2">
         <label
           htmlFor="format-sql-input"
@@ -80,7 +82,6 @@ export default function FormatTab({ hasStyle }) {
         />
       </div>
 
-      {/* Format Button */}
       <button
         id="format-sql-btn"
         onClick={handleFormat}
@@ -93,16 +94,15 @@ export default function FormatTab({ hasStyle }) {
                    shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40
                    transition-all duration-300 cursor-pointer"
       >
-        <span>✨</span>
+        <span>*</span>
         Format SQL
       </button>
 
-      {/* Output */}
       {outputSQL && (
         <div className="animate-slide-up space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-cyan-400 text-lg">📄</span>
+              <span className="text-cyan-400 text-lg">SQL</span>
               <h3 className="text-sm font-semibold text-slate-300">
                 Formatted Output
               </h3>
@@ -119,7 +119,7 @@ export default function FormatTab({ hasStyle }) {
             >
               {copied ? (
                 <>
-                  <span className="text-green-400">✓</span>
+                  <span className="text-green-400">OK</span>
                   <span className="text-green-400">Copied!</span>
                 </>
               ) : (

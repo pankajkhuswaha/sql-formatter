@@ -1,26 +1,29 @@
-import { useState, useEffect } from "react";
-import { formatSQL } from "../lib/sqlFormatter";
+import { useEffect, useState } from 'react';
+import { formatSQL } from '../lib/sqlFormatter';
+import { readStoredRules } from '../lib/storage';
 
 export default function FormatterPanel() {
-  const [inputSQL, setInputSQL] = useState("");
-  const [outputSQL, setOutputSQL] = useState("");
-  const [activeTab, setActiveTab] = useState("input");
+  const [inputSQL, setInputSQL] = useState('');
+  const [outputSQL, setOutputSQL] = useState('');
+  const [activeTab, setActiveTab] = useState<'input' | 'formatted'>('input');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!inputSQL.trim()) {
-      setOutputSQL("");
+      setOutputSQL('');
       return;
     }
-    const saved = localStorage.getItem("sqlStyleRules");
-    if (!saved) return;
+
+    const rules = readStoredRules();
+    if (!rules) return;
 
     try {
-      const rules = JSON.parse(saved);
       const formatted = formatSQL(inputSQL, rules);
       setOutputSQL(formatted);
-    } catch (e) {
-      setOutputSQL("-- Error formatting SQL\n" + e.message);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown formatting error.';
+      setOutputSQL(`-- Error formatting SQL\n${message}`);
     }
   }, [inputSQL]);
 
@@ -31,11 +34,11 @@ export default function FormatterPanel() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      const textarea = document.createElement("textarea");
+      const textarea = document.createElement('textarea');
       textarea.value = outputSQL;
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand("copy");
+      document.execCommand('copy');
       document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -44,44 +47,34 @@ export default function FormatterPanel() {
 
   return (
     <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 pb-6 animate-slide-up">
-
-      {/* Mobile Tab Header */}
       <div className="md:hidden flex p-1.5 bg-slate-200/60 dark:bg-[#111] rounded-2xl mb-6 backdrop-blur-md shadow-inner">
         <button
-          onClick={() => setActiveTab("input")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === "input"
-            ? "bg-white dark:bg-[#222] text-slate-800 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
-            : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          onClick={() => setActiveTab('input')}
+          className={`flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'input'
+            ? 'bg-white dark:bg-[#222] text-slate-800 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
         >
           Raw AI Output
         </button>
         <button
-          onClick={() => setActiveTab("formatted")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === "formatted"
-            ? "bg-white dark:bg-[#222] text-slate-800 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
-            : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          onClick={() => setActiveTab('formatted')}
+          className={`flex-1 py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${activeTab === 'formatted'
+            ? 'bg-white dark:bg-[#222] text-slate-800 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
         >
           Standardized
         </button>
       </div>
 
-      {/* Main Comparison Window */}
       <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl relative">
-
-        {/* Window Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/50 dark:border-white/10 bg-slate-50/50 dark:bg-[#111]">
-          {/* Mac Controls */}
           <div className="flex items-center gap-2 w-24">
             <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
             <div className="w-3 h-3 rounded-full bg-yellow-400/80"></div>
             <div className="w-3 h-3 rounded-full bg-green-400/80"></div>
           </div>
-
-          {/* <div className="text-xs font-medium text-slate-500 dark:text-slate-400 tracking-wider">
-            comparison-viewer.sql
-          </div> */}
 
           <div className="w-24 flex justify-end">
             <button
@@ -89,15 +82,12 @@ export default function FormatterPanel() {
               disabled={!outputSQL}
               className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 disabled:opacity-30 rounded-md transition-colors text-xs font-semibold"
             >
-              {copied ? "Copied!" : "Copy"}
+              {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
         </div>
 
-        {/* Editor Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200/50 dark:divide-white/10 h-[65vh] min-h-[500px]">
-
-          {/* Left Side: Input */}
           <div className={`flex-col h-full bg-white/40 dark:bg-black/40 relative group ${activeTab === 'formatted' ? 'hidden md:flex' : 'flex'}`}>
             <div className="absolute top-3 right-4 z-10 px-2 py-1 rounded-md bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-[10px] font-bold text-red-500 uppercase tracking-widest select-none pointer-events-none">
               Chaotic AI Output
@@ -111,7 +101,6 @@ export default function FormatterPanel() {
             />
           </div>
 
-          {/* Right Side: Output */}
           <div className={`flex-col h-full overflow-hidden bg-slate-50/40 dark:bg-[#0a0a0a]/60 relative ${activeTab === 'input' ? 'hidden md:flex' : 'flex'}`}>
             <div className="absolute top-3 right-4 z-10 px-2 py-1 rounded-md bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 text-[10px] font-bold text-green-500 uppercase tracking-widest select-none pointer-events-none">
               Your Standard
@@ -122,7 +111,7 @@ export default function FormatterPanel() {
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center space-y-3">
-                    <div className="text-4xl">✨</div>
+                    <div className="text-4xl">SQL</div>
                     <p className="text-sm text-slate-400 dark:text-slate-500 font-medium">
                       Formatted standard will appear here.
                     </p>
@@ -131,11 +120,9 @@ export default function FormatterPanel() {
               )}
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Background ambient glow matching the window */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-1/2 bg-blue-500/20 dark:bg-blue-500/10 blur-[100px] pointer-events-none -z-10"></div>
     </div>
   );
